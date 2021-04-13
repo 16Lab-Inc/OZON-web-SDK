@@ -20,52 +20,78 @@ var batteryStateChar;
 var updatePlotHandle;
 var server;
 
+
+async function handleImuService(imu_service){
+    /* movement char */
+    
+    toastUser("Found IMU Service!");
+    const characteristics = await imu_service.getCharacteristics();
+    movementChar = characteristics.find(char => char.uuid == MOVEMENT_DATA_CHARACTERISTIC);
+
+    if(movementChar != undefined){
+        toastUser("Found Movement Characteristic!")
+        movementChar.addEventListener('characteristicvaluechanged',
+            handleImuNotifications);
+        document.getElementById('enMovement').disabled = false;
+    }
+}
+
 /* handle connection button */
 async function onConnectClick() {
     try {
         document.getElementById("connectButton").disabled = true;
         document.getElementById("disconnectButton").disabled = false;
 
+        const serviceList = [IMU_SERVICE, LED_SERVICE, HAPTICS_SERVICE, BATTERY_SERVICE];
+
         toastUser('Requesting Bluetooth Device...');
         const device = await navigator.bluetooth.requestDevice({filters:[{namePrefix: "OZON"}],
-            optionalServices:[IMU_SERVICE, LED_SERVICE, HAPTICS_SERVICE, BATTERY_SERVICE]});
+            optionalServices: serviceList});
         
         device.addEventListener('gattserverdisconnected', onDisconnected);
         
         toastUser('Connecting to GATT Server...');
         server = await device.gatt.connect();
-        
-        toastUser('Getting Services...');
-        const imu_service = await server.getPrimaryService(IMU_SERVICE);
+
+        toastUser('Collecting Services...');
+        const services = await server.getPrimaryServices();
+
+        const imu_service = services.find(service => service.uuid == IMU_SERVICE);
+        if(imu_service != undefined)
+            handleImuService(imu_service);
+
+
         const led_service = await server.getPrimaryService(LED_SERVICE);
         const haptics_service = await server.getPrimaryService(HAPTICS_SERVICE);
         const battery_service = await server.getPrimaryService(BATTERY_SERVICE);
     
         toastUser('Getting Characteristics...');
-        /* movement char */
-        movementChar = await imu_service.getCharacteristic(MOVEMENT_DATA_CHARACTERISTIC);
-        movementChar.addEventListener('characteristicvaluechanged',
-            handleImuNotifications);
-        document.getElementById('enMovement').disabled = false;
 
-        /* LED char */
-        ledChar = await led_service.getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
-        document.getElementById('ledService').disabled = false;
-        
-        /* haptics char */
-        hapticsChar = await haptics_service.getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
-        document.getElementById('hapticsService').disabled = false;
-
+        try{
+            /* LED char */
+            ledChar = await led_service.getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+            document.getElementById('ledService').disabled = false;
+            
+            /* haptics char */
+            hapticsChar = await haptics_service.getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+            document.getElementById('hapticsService').disabled = false;
+        } catch (error){
+            toastUser('ERROR! :' + error);
+        }
         /* battery level char */
         batteryLevelChar = await battery_service.getCharacteristic(BATTERY_LEVEL_CHARACTERISTIC);
         batteryLevelChar.addEventListener('characteristicvaluechanged',
             handleBatteryNotifications);
         await batteryLevelChar.startNotifications();
 
-        batteryStateChar = await battery_service.getCharacteristic(BATTERY_STATE_CHARACTERISTIC);
-        batteryStateChar.addEventListener('characteristicvaluechanged',
-            handleBatteryNotifications);
-        await batteryStateChar.startNotifications();
+        try{
+            batteryStateChar = await battery_service.getCharacteristic(BATTERY_STATE_CHARACTERISTIC);
+            batteryStateChar.addEventListener('characteristicvaluechanged',
+                handleBatteryNotifications);
+            await batteryStateChar.startNotifications();
+        } catch (error){
+            toastUser('ERROR! :' + error);
+        }
 
         toastUser('Connected!');
       } catch(error) {
