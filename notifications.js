@@ -15,6 +15,7 @@ var movementChar;
 var ledChar;
 var hapticsChar;
 var batteryLevelChar;
+var batteryStateChar;
 
 var updatePlotHandle;
 var server;
@@ -60,6 +61,11 @@ async function onConnectClick() {
         batteryLevelChar.addEventListener('characteristicvaluechanged',
             handleBatteryNotifications);
         await batteryLevelChar.startNotifications();
+
+        batteryStateChar = await battery_service.getCharacteristic(BATTERY_STATE_CHARACTERISTIC);
+        batteryStateChar.addEventListener('characteristicvaluechanged',
+            handleBatteryNotifications);
+        await batteryStateChar.startNotifications();
 
         toastUser('Connected!');
       } catch(error) {
@@ -161,13 +167,22 @@ async function onHapticsClick(){
     }
 }
 
+var batteryLevel = 0;
+var batteryState = 0;
+
 function handleBatteryNotifications(event) {
     let value = event.target.value.getUint8(0);
-    var level;
-    switch(value) {
+    if(event.target.uuid == BATTERY_LEVEL_CHARACTERISTIC){
+        batteryLevel = value;
+    } else if (event.target.uuid == BATTERY_STATE_CHARACTERISTIC){
+        batteryState = value;
+    }
+    let level;
+    let state;
+    switch(batteryLevel) {
         case 33:
-          level = '[■ □ □]';
-          break;
+            level = '[■ □ □]';
+        break;
         case 66:
             level = '[■ ■ □]';
             break;
@@ -176,8 +191,27 @@ function handleBatteryNotifications(event) {
             break;
         default:
             level = '[□ □ □]';
-      }
-    document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + level;
+    }
+
+    switch(batteryState){
+        case 0:
+            state = 'DONE CHARGING';
+            break;
+        case 1:
+            state = 'CHARGING';
+            break;
+        case 2:
+            state = 'FAULT';
+            break;
+        case 3:
+            state = 'SLOW_CHARGE';
+            break;
+        default:
+            state = 'DISCHARGING';
+            break;
+            
+    }
+    document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + level +' [' + state + ']';
 }
 
 /* global defines */
