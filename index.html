@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <script src="https://cdn.plot.ly/plotly-latest.js" charset="utf-8"></script>
+        <link rel="stylesheet" href="snackbar.css">
+    </head>
+    
+    <body>
+        <div class="navbar"><span>OZON device testbench</span></div>
+        <div class="wrapper">
+            <div id="gyro"></div>
+            <div id="acc"></div>
+        </div>
+        <script type="text/javascript" src="./notifications.js"></script>
+        <button onclick="onConnectClick()" id="connectButton">Connect</button>
+        <button disabled onclick="onDisconnectClick()" id="disconnectButton">Disconnect</button>
+
+        <input type="checkbox" id="enMovement" disabled>Enable movement notifications</input>
+        <!-- The actual snackbar -->
+        <div id="snackbar">Some text some message..</div>
+    </body>
+</html> 
