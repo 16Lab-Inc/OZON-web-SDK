@@ -1,11 +1,21 @@
 /* BLE services */
 const IMU_SERVICE = BluetoothUUID.getService("f000aa80-0451-4000-b000-000000000000");
+const LED_SERVICE = BluetoothUUID.getService("f000ee80-0451-4000-b000-000000000000");
+const HAPTICS_SERVICE = BluetoothUUID.getService("00001802-0000-1000-8000-00805f9b34fb");
+const BATTERY_SERVICE = BluetoothUUID.getService("battery_service");
 
 /* BLE characteristics */
 const MOVEMENT_DATA_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000aa81-0451-4000-b000-000000000000");
+const ALERT_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("alert_level");
+const BATTERY_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("battery_level");
+const BATTERY_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("ff000ee1-0000-1000-8000-77332aadd550");
 
 /* globals */
 var movementChar;
+var ledChar;
+var hapticsChar;
+var batteryLevelChar;
+
 var updatePlotHandle;
 var server;
 
@@ -17,26 +27,41 @@ async function onConnectClick() {
 
         toastUser('Requesting Bluetooth Device...');
         const device = await navigator.bluetooth.requestDevice({filters:[{namePrefix: "OZON"}],
-            optionalServices:[IMU_SERVICE]});
+            optionalServices:[IMU_SERVICE, LED_SERVICE, HAPTICS_SERVICE, BATTERY_SERVICE]});
         
         device.addEventListener('gattserverdisconnected', onDisconnected);
         
         toastUser('Connecting to GATT Server...');
         server = await device.gatt.connect();
         
-        toastUser('Getting Service...');
+        toastUser('Getting Services...');
         const imu_service = await server.getPrimaryService(IMU_SERVICE);
+        const led_service = await server.getPrimaryService(LED_SERVICE);
+        const haptics_service = await server.getPrimaryService(HAPTICS_SERVICE);
+        const battery_service = await server.getPrimaryService(BATTERY_SERVICE);
     
-        toastUser('Getting Characteristic...');
+        toastUser('Getting Characteristics...');
+        /* movement char */
         movementChar = await imu_service.getCharacteristic(MOVEMENT_DATA_CHARACTERISTIC);
-
         movementChar.addEventListener('characteristicvaluechanged',
-            handleNotifications);
-
+            handleImuNotifications);
         document.getElementById('enMovement').disabled = false;
 
-        toastUser('Connected!');
+        /* LED char */
+        ledChar = await led_service.getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+        document.getElementById('ledService').disabled = false;
         
+        /* haptics char */
+        hapticsChar = await haptics_service.getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+        document.getElementById('hapticsService').disabled = false;
+
+        /* battery level char */
+        batteryLevelChar = await battery_service.getCharacteristic(BATTERY_LEVEL_CHARACTERISTIC);
+        batteryLevelChar.addEventListener('characteristicvaluechanged',
+            handleBatteryNotifications);
+        await batteryLevelChar.startNotifications();
+
+        toastUser('Connected!');
       } catch(error) {
         toastUser('Argh! ' + error);
         onDisconnected();
@@ -58,6 +83,11 @@ function onDisconnected(){
     document.getElementById("connectButton").disabled = false;
     document.getElementById("disconnectButton").disabled = true;
     document.getElementById('enMovement').disabled = true;
+    
+    /* disable services */
+    document.getElementById('ledService').disabled = true;
+    document.getElementById('hapticsService').disabled = true;
+
     toastUser("Device Disconnected!");
 }
 
@@ -105,6 +135,35 @@ async function onMovementCharClick(checked){
     } catch(error) {
         toastUser("ERROR! " + error);
     }
+}
+
+async function onLedClick(){
+    try{
+        if(ledChar){
+            const option = document.getElementById('ledWaveform').value
+            const value = new Uint8Array([parseInt(option)])
+            await ledChar.writeValue(value);
+        }
+    }catch(error){
+        toastUser("ERROR! " + error);
+    }
+}
+
+async function onHapticsClick(){
+    try{
+        if(hapticsChar){
+            const option = document.getElementById('hapticsWaveform').value
+            const value = new Uint8Array([parseInt(option)])
+            await hapticsChar.writeValue(value);
+        }
+    }catch(error){
+        toastUser("ERROR! " + error);
+    }
+}
+
+function handleBatteryNotifications(event) {
+    let value = event.target.value;
+    document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + value.getUint8(0) + '%';
 }
 
 /* global defines */
@@ -194,7 +253,7 @@ function updatePlot(){
 }
 
 
-function handleNotifications(event) {
+function handleImuNotifications(event) {
     let value = event.target.value;
     
     function copy(src, len)  {

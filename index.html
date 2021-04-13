@@ -13,24 +13,40 @@
         <hr>
 
         <header> <h1> IMU Service</h1> </header>
-            <section>
-                <div class="row">
-                    <div class="column">
-                        <div id="gyro"></div>
-                    </div>
-                    <div class="column">
-                        <div id="acc"></div>
-                    </div>
-                  </div>
+            <section id="ImuPlots">
+                <div id="gyro"></div>
+                <div id="acc"></div>
             </section>
         <footer>            
             <input type="checkbox" id="enMovement" disabled>
             <label for="enMovement"> Enable movement notifications</label> 
         </footer>
         <hr>
-        <!-- The actual snackbar -->
-        <div id="snackbar">Some text some message..</div>
+        <fieldset id="ledService" disabled>
+            <h1>LED Service</h1>
+            <select id="ledWaveform">
+                <option value="0">Quick Blink</option>
+                <option value="1">Long Blink</option>
+                <option value="2">Beathing Blink</option>
+                </select>
+            <button id="ledButton" onclick="onLedClick();">Blink!</button>
+        </fieldset>
 
+        <fieldset id="hapticsService" disabled>
+            <h1>Haptics Service</h1>
+            <select id="hapticsWaveform">
+                <option value="0">Short tap</option>
+                <option value="1">Double tap</option>
+                <option value="2">Multiple taps</option>
+                </select>
+            <button id="hapticsButton" onclick="onHapticsClick();">Vibrate!</button>
+        </fieldset>
+        <hr>
+            <h1>Battery Service</h1>
+            <div id="batteryStatus">Battery Status: N/A</div>
+        <hr>
+        <div id="snackbar">Some text some message..</div>
+        <!-- scripts -->
         <script type="text/javascript" src="./notifications.js"></script>
     </body>
 </html> 
