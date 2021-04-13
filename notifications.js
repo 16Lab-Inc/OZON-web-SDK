@@ -162,8 +162,22 @@ async function onHapticsClick(){
 }
 
 function handleBatteryNotifications(event) {
-    let value = event.target.value;
-    document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + value.getUint8(0) + '%';
+    let value = event.target.value.getUint8(0);
+    var level;
+    switch(value) {
+        case 33:
+          level = '[■ □ □]';
+          break;
+        case 66:
+            level = '[■ ■ □]';
+            break;
+        case 100:
+            level = '[■ ■ ■]';
+            break;
+        default:
+            level = '[□ □ □]';
+      }
+    document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + level;
 }
 
 /* global defines */
