@@ -22,19 +22,62 @@ var server;
 
 
 async function handleImuService(imu_service){
-    /* movement char */
-    
     toastUser("Found IMU Service!");
     const characteristics = await imu_service.getCharacteristics();
-    movementChar = characteristics.find(char => char.uuid == MOVEMENT_DATA_CHARACTERISTIC);
 
-    if(movementChar != undefined){
-        toastUser("Found Movement Characteristic!")
+    movementChar = characteristics.find(char => char.uuid == MOVEMENT_DATA_CHARACTERISTIC);
+    if(movementChar){
+        toastUser("Found Movement Characteristic!");
         movementChar.addEventListener('characteristicvaluechanged',
             handleImuNotifications);
         document.getElementById('enMovement').disabled = false;
     }
 }
+
+async function handleLedService(led_service){
+    toastUser("Found LED Service");
+    const characteristics = await led_service.getCharacteristics();
+    
+    ledChar = characteristics.find(char => char.uuid == ALERT_LEVEL_CHARACTERISTIC);
+    if (ledChar){
+        toastUser("Found Led Characteristic!");
+        document.getElementById('ledService').disabled = false;
+    }
+}
+
+async function handleHapticsService(haptics_service){
+    toastUser("Found Haptics Service");
+    const characteristics = await haptics_service.getCharacteristics();
+    
+    hapticsChar = characteristics.find(char => char.uuid == ALERT_LEVEL_CHARACTERISTIC);
+    if (hapticsChar){
+        toastUser("Found HapticsCharacteristic!");
+        document.getElementById('hapticsService').disabled = false;
+    }
+}
+
+async function handleBatteryService(battery_service){
+    toastUser("Found Battery Service");
+    const characteristics = await battery_service.getCharacteristics();
+
+    batteryLevelChar = characteristics.find(char => char.uuid == BATTERY_LEVEL_CHARACTERISTIC);
+    batteryStateChar = characteristics.find(char => char.uuid == BATTERY_STATE_CHARACTERISTIC);
+
+    if (batteryLevelChar){
+        toastUser("Found Battery Level Characteristic!");
+        batteryLevelChar.addEventListener('characteristicvaluechanged',
+                                        handleBatteryNotifications);
+        await batteryLevelChar.startNotifications();
+    }
+
+    if(batteryStateChar){
+        toastUser("Found Battery State Characteristic!");
+        batteryStateChar.addEventListener('characteristicvaluechanged',
+                                        handleBatteryNotifications);
+        await batteryStateChar.startNotifications();
+    }
+}
+
 
 /* handle connection button */
 async function onConnectClick() {
@@ -56,43 +99,26 @@ async function onConnectClick() {
         toastUser('Collecting Services...');
         const services = await server.getPrimaryServices();
 
+        /* check for IMU service */
         const imu_service = services.find(service => service.uuid == IMU_SERVICE);
-        if(imu_service != undefined)
+        if(imu_service)
             handleImuService(imu_service);
 
+        /* check for LED service */
+        const led_service = services.find(service => service.uuid == LED_SERVICE);
+        if(led_service)
+            handleLedService(led_service);
 
-        const led_service = await server.getPrimaryService(LED_SERVICE);
-        const haptics_service = await server.getPrimaryService(HAPTICS_SERVICE);
-        const battery_service = await server.getPrimaryService(BATTERY_SERVICE);
-    
-        toastUser('Getting Characteristics...');
+        /* check for haptics service */
+        const haptics_service = services.find(service => service.uuid == HAPTICS_SERVICE);
+        if(haptics_service)
+            handleHapticsService(haptics_service);
 
-        try{
-            /* LED char */
-            ledChar = await led_service.getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
-            document.getElementById('ledService').disabled = false;
+        /* check for battery service */
+        const battery_service = services.find(service => service.uuid == BATTERY_SERVICE);
+        if(battery_service)
+            handleBatteryService(battery_service);
             
-            /* haptics char */
-            hapticsChar = await haptics_service.getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
-            document.getElementById('hapticsService').disabled = false;
-        } catch (error){
-            toastUser('ERROR! :' + error);
-        }
-        /* battery level char */
-        batteryLevelChar = await battery_service.getCharacteristic(BATTERY_LEVEL_CHARACTERISTIC);
-        batteryLevelChar.addEventListener('characteristicvaluechanged',
-            handleBatteryNotifications);
-        await batteryLevelChar.startNotifications();
-
-        try{
-            batteryStateChar = await battery_service.getCharacteristic(BATTERY_STATE_CHARACTERISTIC);
-            batteryStateChar.addEventListener('characteristicvaluechanged',
-                handleBatteryNotifications);
-            await batteryStateChar.startNotifications();
-        } catch (error){
-            toastUser('ERROR! :' + error);
-        }
-
         toastUser('Connected!');
       } catch(error) {
         toastUser('Argh! ' + error);
@@ -241,8 +267,8 @@ function handleBatteryNotifications(event) {
 }
 
 /* global defines */
-const GYROSCOPE_RANGE = 500.0;
-const ACCELEROMETER_RANGE = 4.0;
+const GYROSCOPE_RANGE = 250.0;
+const ACCELEROMETER_RANGE = 8.0;
 const PLOT_RANGE = 100;
 const TIMESTAMP_STEP = 39e-6;
 
