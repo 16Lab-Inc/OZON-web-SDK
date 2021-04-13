@@ -5,17 +5,32 @@
     </head>
     
     <body>
-        <div class="navbar"><span>OZON device testbench</span></div>
-        <div class="wrapper">
-            <div id="gyro"></div>
-            <div id="acc"></div>
+        <div class="navbar">
+            <h1>OZON device testbench</h1>
         </div>
-        <script type="text/javascript" src="./notifications.js"></script>
         <button onclick="onConnectClick()" id="connectButton">Connect</button>
         <button disabled onclick="onDisconnectClick()" id="disconnectButton">Disconnect</button>
+        <hr>
 
-        <input type="checkbox" id="enMovement" disabled>Enable movement notifications</input>
+        <header> <h1> IMU Service</h1> </header>
+            <section>
+                <div class="row">
+                    <div class="column">
+                        <div id="gyro"></div>
+                    </div>
+                    <div class="column">
+                        <div id="acc"></div>
+                    </div>
+                  </div>
+            </section>
+        <footer>            
+            <input type="checkbox" id="enMovement" disabled>
+            <label for="enMovement"> Enable movement notifications</label> 
+        </footer>
+        <hr>
         <!-- The actual snackbar -->
         <div id="snackbar">Some text some message..</div>
+
+        <script type="text/javascript" src="./notifications.js"></script>
     </body>
 </html> 
