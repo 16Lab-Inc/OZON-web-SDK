@@ -1,4 +1,5 @@
-/* BLE services */
+/*
+// BLE services 
 const IMU_SERVICE = BluetoothUUID.getService("f000aa80-0451-4000-b000-000000000000");
 const LED_SERVICE = BluetoothUUID.getService("f000ee80-0451-4000-b000-000000000000");
 const HAPTICS_SERVICE = BluetoothUUID.getService("00001802-0000-1000-8000-00805f9b34fb");
@@ -7,7 +8,7 @@ const TOUCH_SERVICE = BluetoothUUID.getService("f000ffe0-0451-4000-b000-00000000
 
 const serviceList = [IMU_SERVICE, LED_SERVICE, HAPTICS_SERVICE, BATTERY_SERVICE, TOUCH_SERVICE];
 
-/* BLE characteristics */
+// BLE characteristics 
 const MOVEMENT_DATA_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000aa81-0451-4000-b000-000000000000");
 const ALERT_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("alert_level");
 const BATTERY_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("battery_level");
@@ -15,7 +16,7 @@ const BATTERY_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000ffb2-0
 const CHARGER_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("ff000ee1-0000-1000-8000-77332aadd550");
 const TOUCH_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000ffe1-0451-4000-b000-000000000000");
 
-/* globals */
+// globals 
 var movementChar;
 var ledChar;
 var hapticsChar;
@@ -99,8 +100,10 @@ async function handleTouchService(touch_service){
         document.getElementById("touchWatermark").style.display = "none";
     }
 }
+*/
+import {ozonDevice} from './lib/OzonDevice.js';
 
-
+var device = ozonDevice;
 
 /* handle connection button */
 async function onConnectClick() {
@@ -108,7 +111,12 @@ async function onConnectClick() {
         document.getElementById("connectButton").disabled = true;
         document.getElementById("disconnectButton").disabled = false;
 
+        device.logCallback = console.log;
+        device.touchNotificationCallback = handleTouchNotifications;
+        device.batteryNotificationCallback = handleBatteryNotifications;
 
+        device.connect();
+/*
         toastUser('Requesting Bluetooth Device...');
         const device = await navigator.bluetooth.requestDevice({filters:[{namePrefix: "OZON"}],
             optionalServices: serviceList});
@@ -121,36 +129,39 @@ async function onConnectClick() {
         toastUser('Collecting Services...');
         const services = await server.getPrimaryServices();
 
-        /* check for IMU service */
+        // check for IMU service 
         const imu_service = services.find(service => service.uuid == IMU_SERVICE);
         if(imu_service)
             handleImuService(imu_service);
 
-        /* check for LED service */
+        // check for LED service 
         const led_service = services.find(service => service.uuid == LED_SERVICE);
         if(led_service)
             handleLedService(led_service);
 
-        /* check for haptics service */
+        // check for haptics service 
         const haptics_service = services.find(service => service.uuid == HAPTICS_SERVICE);
         if(haptics_service)
             handleHapticsService(haptics_service);
 
-        /* check for battery service */
+        // check for battery service 
         const battery_service = services.find(service => service.uuid == BATTERY_SERVICE);
         if(battery_service)
             handleBatteryService(battery_service);
 
-        /* check for touch service */
+        // check for touch service 
         const touch_service = services.find(service => service.uuid == TOUCH_SERVICE);
         if(touch_service)
             handleTouchService(touch_service);
 
         toastUser('Connected!');
+*/
+
       } catch(error) {
         toastUser('Argh! ' + error);
         onDisconnected();
       }
+
 }
 
 /* handle disconnection button */
@@ -197,12 +208,15 @@ function toastUser(text){
     }, 3000);
 }
 
-document.addEventListener('DOMContentLoaded', function(event) {
-    // do stuff after website has loaded
-    const enMovementCheckbox = document.getElementById('enMovement');
-    enMovementCheckbox.addEventListener('change', (event) => {
-    onMovementCharClick(event.currentTarget.checked);
-})
+document.addEventListener('DOMContentLoaded', 
+    function(event) {
+        // do stuff after website has loaded
+        const enMovementCheckbox = document.getElementById('enMovement');
+        enMovementCheckbox.addEventListener('change', (event) => {
+            onMovementCharClick(event.currentTarget.checked);
+        })
+        const connectButton = document.getElementById('connectButton');
+        connectButton.onclick = onConnectClick;
 })
 
 
@@ -253,39 +267,29 @@ async function onHapticsClick(){
 var batteryLevel = 0;
 var batteryState = 0;
 
-function handleTouchNotifications(event){
-    let value = event.target.value.getUint8(0);
-    let state = [value & 0x01 ? '1':'0', 
-                value & 0x02 ? '1':'0',
-                value & 0x04 ? '1':'0',
-                value & 0x08 ? '1':'0'];
+function handleTouchNotifications(buttons){
+
+    let state = [
+        buttons.btn0 ? '1':'0', 
+        buttons.btn1 ? '1':'0',
+        buttons.btn2 ? '1':'0',
+        buttons.btn3 ? '1':'0'];
     document.getElementById('touchStatus').innerHTML = 'Touch Status [' + state.join('-') + ']';
 }
 
-function handleBatteryNotifications(event) {
-    let value = event.target.value.getUint8(0);
-    if(event.target.uuid == BATTERY_LEVEL_CHARACTERISTIC){
-        batteryLevel = value;
-    } else if (event.target.uuid == BATTERY_STATE_CHARACTERISTIC){
-        batteryState = value;
+function handleBatteryNotifications(value) {
+    if(value.level)
+        batteryLevel = value.level;
+    else if (value.state){
+        batteryState = value.state;
     }
-    let level;
-    let state;
-
+    var level;
     if(batteryLevel < 25)           level = '[□ □ □]';
     else if (batteryLevel < 50)     level = '[■ □ □]';
     else if (batteryLevel < 75)     level = '[■ ■ □]';
     else                            level = '[■ ■ ■]';
 
-    switch (batteryState) {
-        case 3:
-            state = 'CHARGING';
-            break;
-        default:
-            state = 'DISCHARGING';
-            break;
-    }
-    document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + level +' [' + state + ']';
+    document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + level +' [' + batteryState + ']';
 }
 
 /* global defines */
