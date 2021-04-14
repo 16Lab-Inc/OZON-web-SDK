@@ -93,13 +93,14 @@ document.addEventListener('DOMContentLoaded',
 })
 
 var updatePlotHandle;
+const PLOT_UPDATE_RATE = 200;
 async function onMovementCharClick(checked){
     if(checked){
         gyro_data = {x:[],y:[],z:[], time:[]};
         acc_data = {x:[],y:[],z:[], time:[]};
         device.setImuNotifications(true);
         toastUser('Movement updates enabled!');
-        updatePlotHandle = setInterval(updatePlot,100);
+        updatePlotHandle = setInterval(updatePlot,PLOT_UPDATE_RATE);
     } else {
         device.setImuNotifications(false);
         toastUser('Movement updates Disabled!');
