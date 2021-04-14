@@ -11,6 +11,9 @@ async function onConnectClick() {
         /* a log callback can be registered to see debug data */
         device.logCallback = console.log;
 
+        /* registed device disconnected callback */
+        device.onDisconnectCallback = onDisconnected;
+
         /* register callbacks for notifications */
         device.touchNotificationCallback = handleTouchNotifications;
         device.batteryNotificationCallback = handleBatteryNotifications;
@@ -29,19 +32,9 @@ async function onConnectClick() {
         device.connect();
 
       } catch(error) {
-        toastUser('Argh! ' + error);
-        onDisconnected();
+        toastUser('ERROR! ' + error);
       }
 
-}
-
-/* handle disconnection button */
-async function onDisconnectClick() {
-    try{
-        server.disconnect();
-    } catch(error){
-        toastUser("ERROR! " + error);
-    }
 }
 
 
@@ -58,6 +51,10 @@ function onDisconnected(){
     document.getElementById("batteryServiceWatermark").style.display = "initial";
     document.getElementById("imuServiceWatermark").style.display = "initial";
     document.getElementById("touchWatermark").style.display = "initial";
+
+    /* disable all intervals */
+    if(updatePlotHandle)
+        clearInterval(updatePlotHandle);
 
     toastUser("Device Disconnected!");
 }
@@ -90,6 +87,7 @@ document.addEventListener('DOMContentLoaded',
         document.getElementById('connectButton').onclick = onConnectClick;
         document.getElementById('hapticsButton').onclick = onHapticsClick;
         document.getElementById('ledButton').onclick = onLedClick;
+        document.getElementById('disconnectButton').onclick = function(){ device.disconnect() };
 })
 
 var updatePlotHandle;

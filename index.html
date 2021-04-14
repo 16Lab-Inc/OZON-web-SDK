@@ -6,12 +6,11 @@
     </head>
     
     <body>
-        <script type="module" src="./notifications.js"></script>
         <div class="navbar">
             <h1>OZON device testbench</h1>
         </div>
-        <button onclick="onConnectClick();" id="connectButton">Connect</button>
-        <button disabled onclick="onDisconnectClick()" id="disconnectButton">Disconnect</button>
+        <button id="connectButton">Connect</button>
+        <button disabled id="disconnectButton">Disconnect</button>
         <hr>
             <header> <h1> IMU Service</h1> </header>
                 <section id="ImuPlots">
@@ -23,7 +22,6 @@
                                 DISCONNECTED
                             </div>
                         </div>
-
                         <div id="gyro"></div>
                         <div id="acc"></div>
                     </div>
@@ -78,8 +76,8 @@
         </div>
         <hr>
 
-
         <div id="snackbar">Some text some message..</div>
         <!-- scripts -->
+        <script type="module" src="./notifications.js"></script>
     </body>
 </html> 
