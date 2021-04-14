@@ -27,11 +27,13 @@ async function onConnectClick() {
             document.getElementById('enMovement').disabled = false;
             document.getElementById("imuServiceWatermark").style.display = "none";
         }
+        device.touchCharAvailableCallback = function() {document.getElementById("touchWatermark").style.display = "none";};
 
         /* begin bluetooth connection process */
         device.connect();
 
       } catch(error) {
+        onDisconnected();
         toastUser('ERROR! ' + error);
       }
 
