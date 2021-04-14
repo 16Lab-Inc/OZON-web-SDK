@@ -1,106 +1,3 @@
-/*
-// BLE services 
-const IMU_SERVICE = BluetoothUUID.getService("f000aa80-0451-4000-b000-000000000000");
-const LED_SERVICE = BluetoothUUID.getService("f000ee80-0451-4000-b000-000000000000");
-const HAPTICS_SERVICE = BluetoothUUID.getService("00001802-0000-1000-8000-00805f9b34fb");
-const BATTERY_SERVICE = BluetoothUUID.getService("battery_service");
-const TOUCH_SERVICE = BluetoothUUID.getService("f000ffe0-0451-4000-b000-000000000000");
-
-const serviceList = [IMU_SERVICE, LED_SERVICE, HAPTICS_SERVICE, BATTERY_SERVICE, TOUCH_SERVICE];
-
-// BLE characteristics 
-const MOVEMENT_DATA_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000aa81-0451-4000-b000-000000000000");
-const ALERT_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("alert_level");
-const BATTERY_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("battery_level");
-const BATTERY_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000ffb2-0451-4000-b000-000000000000");
-const CHARGER_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("ff000ee1-0000-1000-8000-77332aadd550");
-const TOUCH_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000ffe1-0451-4000-b000-000000000000");
-
-// globals 
-var movementChar;
-var ledChar;
-var hapticsChar;
-var batteryLevelChar;
-var batteryStateChar;
-var touchChar;
-
-var updatePlotHandle;
-var server;
-
-
-async function handleImuService(imu_service){
-    toastUser("Found IMU Service!");
-    const characteristics = await imu_service.getCharacteristics();
-
-    movementChar = characteristics.find(char => char.uuid == MOVEMENT_DATA_CHARACTERISTIC);
-    if(movementChar){
-        toastUser("Found Movement Characteristic!");
-        movementChar.addEventListener('characteristicvaluechanged',
-            handleImuNotifications);
-        document.getElementById('enMovement').disabled = false;
-        document.getElementById("imuServiceWatermark").style.display = "none";
-    }
-}
-
-async function handleLedService(led_service){
-    toastUser("Found LED Service");
-    const characteristics = await led_service.getCharacteristics();
-    
-    ledChar = characteristics.find(char => char.uuid == ALERT_LEVEL_CHARACTERISTIC);
-    if (ledChar){
-        toastUser("Found Led Characteristic!");
-        document.getElementById('ledService').disabled = false;
-    }
-}
-
-async function handleHapticsService(haptics_service){
-    toastUser("Found Haptics Service");
-    const characteristics = await haptics_service.getCharacteristics();
-    
-    hapticsChar = characteristics.find(char => char.uuid == ALERT_LEVEL_CHARACTERISTIC);
-    if (hapticsChar){
-        toastUser("Found HapticsCharacteristic!");
-        document.getElementById('hapticsService').disabled = false;
-    }
-}
-
-async function handleBatteryService(battery_service){
-    toastUser("Found Battery Service");
-    const characteristics = await battery_service.getCharacteristics();
-
-    batteryLevelChar = characteristics.find(char => char.uuid == BATTERY_LEVEL_CHARACTERISTIC);
-    batteryStateChar = characteristics.find(char => char.uuid == BATTERY_STATE_CHARACTERISTIC);
-
-    if (batteryLevelChar){
-        toastUser("Found Battery Level Characteristic!");
-        batteryLevelChar.addEventListener('characteristicvaluechanged',
-                                        handleBatteryNotifications);
-        await batteryLevelChar.startNotifications();
-        document.getElementById("batteryServiceWatermark").style.display = "none";
-    }
-
-    if(batteryStateChar){
-        toastUser("Found Battery State Characteristic!");
-        batteryStateChar.addEventListener('characteristicvaluechanged',
-                                        handleBatteryNotifications);
-        await batteryStateChar.startNotifications();
-    }
-}
-
-async function handleTouchService(touch_service){
-    toastUser("Found Touch Service!");
-    const characteristics = await touch_service.getCharacteristics();
-
-    touchChar = characteristics.find(char => char.uuid == TOUCH_STATE_CHARACTERISTIC);
-    if(touchChar){
-        toastUser("Found Touch Characteristic!");
-        touchChar.addEventListener('characteristicvaluechanged',
-            handleTouchNotifications);
-        touchChar.startNotifications();
-        document.getElementById("touchWatermark").style.display = "none";
-    }
-}
-*/
 import {ozonDevice} from './lib/OzonDevice.js';
 
 var device = ozonDevice;
@@ -111,52 +8,20 @@ async function onConnectClick() {
         document.getElementById("connectButton").disabled = true;
         document.getElementById("disconnectButton").disabled = false;
 
+        /* a log callback can be registered to see debug data */
         device.logCallback = console.log;
+
+        /* register callbacks for notifications */
         device.touchNotificationCallback = handleTouchNotifications;
         device.batteryNotificationCallback = handleBatteryNotifications;
+        
+        /* bluetooth characteristics take some time to become available so
+           register callbacks to handle when they are good to go */
         device.hapticsAlertCharAvailableCallback = function(){document.getElementById('hapticsService').disabled = false;};
+        device.ledCharAvailableCallback = function(){document.getElementById('ledService').disabled = false;}
 
+        /* begin bluetooth connection process */
         device.connect();
-/*
-        toastUser('Requesting Bluetooth Device...');
-        const device = await navigator.bluetooth.requestDevice({filters:[{namePrefix: "OZON"}],
-            optionalServices: serviceList});
-        
-        device.addEventListener('gattserverdisconnected', onDisconnected);
-        
-        toastUser('Connecting to GATT Server...');
-        server = await device.gatt.connect();
-
-        toastUser('Collecting Services...');
-        const services = await server.getPrimaryServices();
-
-        // check for IMU service 
-        const imu_service = services.find(service => service.uuid == IMU_SERVICE);
-        if(imu_service)
-            handleImuService(imu_service);
-
-        // check for LED service 
-        const led_service = services.find(service => service.uuid == LED_SERVICE);
-        if(led_service)
-            handleLedService(led_service);
-
-        // check for haptics service 
-        const haptics_service = services.find(service => service.uuid == HAPTICS_SERVICE);
-        if(haptics_service)
-            handleHapticsService(haptics_service);
-
-        // check for battery service 
-        const battery_service = services.find(service => service.uuid == BATTERY_SERVICE);
-        if(battery_service)
-            handleBatteryService(battery_service);
-
-        // check for touch service 
-        const touch_service = services.find(service => service.uuid == TOUCH_SERVICE);
-        if(touch_service)
-            handleTouchService(touch_service);
-
-        toastUser('Connected!');
-*/
 
       } catch(error) {
         toastUser('Argh! ' + error);
@@ -216,9 +81,10 @@ document.addEventListener('DOMContentLoaded',
         enMovementCheckbox.addEventListener('change', (event) => {
             onMovementCharClick(event.currentTarget.checked);
         })
-        // connect "connect" button 
+        // connect buttons 
         document.getElementById('connectButton').onclick = onConnectClick;
         document.getElementById('hapticsButton').onclick = onHapticsClick;
+        document.getElementById('ledButton').onclick = onLedClick;
 })
 
 
@@ -242,22 +108,16 @@ async function onMovementCharClick(checked){
     }
 }
 
-async function onLedClick(){
-    try{
-        if(ledChar){
-            const option = document.getElementById('ledWaveform').value
-            const value = new Uint8Array([parseInt(option)])
-            await ledChar.writeValue(value);
-        }
-    }catch(error){
-        toastUser("ERROR! " + error);
-    }
+function onLedClick(){
+    const option = document.getElementById('ledWaveform').value
+    const value = parseInt(option);
+    device.blink(value);
 }
 
 function onHapticsClick(){
     const option = document.getElementById('hapticsWaveform').value
     const value = parseInt(option);
-    ozonDevice.vibrateDevice(value);
+    ozonDevice.vibrate(value);
 }
 
 var batteryLevel = 0;
