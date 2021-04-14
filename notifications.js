@@ -3,8 +3,9 @@ const IMU_SERVICE = BluetoothUUID.getService("f000aa80-0451-4000-b000-0000000000
 const LED_SERVICE = BluetoothUUID.getService("f000ee80-0451-4000-b000-000000000000");
 const HAPTICS_SERVICE = BluetoothUUID.getService("00001802-0000-1000-8000-00805f9b34fb");
 const BATTERY_SERVICE = BluetoothUUID.getService("battery_service");
+const TOUCH_SERVICE = BluetoothUUID.getService("f000ffe0-0451-4000-b000-000000000000");
 
-const serviceList = [IMU_SERVICE, LED_SERVICE, HAPTICS_SERVICE, BATTERY_SERVICE];
+const serviceList = [IMU_SERVICE, LED_SERVICE, HAPTICS_SERVICE, BATTERY_SERVICE, TOUCH_SERVICE];
 
 /* BLE characteristics */
 const MOVEMENT_DATA_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000aa81-0451-4000-b000-000000000000");
@@ -12,6 +13,7 @@ const ALERT_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("alert_level"
 const BATTERY_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("battery_level");
 const BATTERY_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000ffb2-0451-4000-b000-000000000000");
 const CHARGER_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("ff000ee1-0000-1000-8000-77332aadd550");
+const TOUCH_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000ffe1-0451-4000-b000-000000000000");
 
 /* globals */
 var movementChar;
@@ -19,6 +21,7 @@ var ledChar;
 var hapticsChar;
 var batteryLevelChar;
 var batteryStateChar;
+var touchChar;
 
 var updatePlotHandle;
 var server;
@@ -83,6 +86,21 @@ async function handleBatteryService(battery_service){
     }
 }
 
+async function handleTouchService(touch_service){
+    toastUser("Found Touch Service!");
+    const characteristics = await touch_service.getCharacteristics();
+
+    touchChar = characteristics.find(char => char.uuid == TOUCH_STATE_CHARACTERISTIC);
+    if(touchChar){
+        toastUser("Found Touch Characteristic!");
+        touchChar.addEventListener('characteristicvaluechanged',
+            handleTouchNotifications);
+        touchChar.startNotifications();
+        document.getElementById("touchWatermark").style.display = "none";
+    }
+}
+
+
 
 /* handle connection button */
 async function onConnectClick() {
@@ -123,6 +141,11 @@ async function onConnectClick() {
         if(battery_service)
             handleBatteryService(battery_service);
 
+        /* check for touch service */
+        const touch_service = services.find(service => service.uuid == TOUCH_SERVICE);
+        if(touch_service)
+            handleTouchService(touch_service);
+
         toastUser('Connected!');
       } catch(error) {
         toastUser('Argh! ' + error);
@@ -152,6 +175,7 @@ function onDisconnected(){
 
     document.getElementById("batteryServiceWatermark").style.display = "initial";
     document.getElementById("imuServiceWatermark").style.display = "initial";
+    document.getElementById("touchWatermark").style.display = "initial";
 
     toastUser("Device Disconnected!");
 }
@@ -228,6 +252,15 @@ async function onHapticsClick(){
 
 var batteryLevel = 0;
 var batteryState = 0;
+
+function handleTouchNotifications(event){
+    let value = event.target.value.getUint8(0);
+    let state = [value & 0x01 ? '1':'0', 
+                value & 0x02 ? '1':'0',
+                value & 0x04 ? '1':'0',
+                value & 0x08 ? '1':'0'];
+    document.getElementById('touchStatus').innerHTML = 'Touch Status [' + state.join('-') + ']';
+}
 
 function handleBatteryNotifications(event) {
     let value = event.target.value.getUint8(0);
