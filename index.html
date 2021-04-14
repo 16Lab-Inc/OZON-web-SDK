@@ -12,16 +12,25 @@
         <button onclick="onConnectClick()" id="connectButton">Connect</button>
         <button disabled onclick="onDisconnectClick()" id="disconnectButton">Disconnect</button>
         <hr>
-
-        <header> <h1> IMU Service</h1> </header>
-            <section id="ImuPlots">
-                <div id="gyro"></div>
-                <div id="acc"></div>
-            </section>
-        <footer>            
-            <input type="checkbox" id="enMovement" disabled>
-            <label for="enMovement"> Enable movement notifications</label> 
-        </footer>
+            <header> <h1> IMU Service</h1> </header>
+                <section id="ImuPlots">
+                    <div class="container">
+                        <!-- Watermark container -->
+                        <div class="container__wrapper">
+                            <!-- The watermark -->
+                            <div id="imuServiceWatermark" class="container__watermark">
+                                DISCONNECTED
+                            </div>
+                        </div>
+                        
+                        <div id="gyro"></div>
+                        <div id="acc"></div>
+                    </div>
+                </section>
+            <footer>            
+                <input type="checkbox" id="enMovement" disabled>
+                <label for="enMovement"> Enable movement notifications</label> 
+            </footer>
         <hr>
         <fieldset id="ledService" disabled>
             <h1>LED Service</h1>
@@ -43,8 +52,17 @@
             <button id="hapticsButton" onclick="onHapticsClick();">Vibrate!</button>
         </fieldset>
         <hr>
+        <div class="container">
+            <!-- Watermark container -->
+            <div class="container__wrapper">
+                <!-- The watermark -->
+                <div id="batteryServiceWatermark" class="container__watermark">
+                    DISCONNECTED
+                </div>
+            </div>
             <h1>Battery Service</h1>
             <div id="batteryStatus">Battery Status: N/A</div>
+        </div>
         <hr>
         <div id="snackbar">Some text some message..</div>
         <!-- scripts -->

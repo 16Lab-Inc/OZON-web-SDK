@@ -4,11 +4,14 @@ const LED_SERVICE = BluetoothUUID.getService("f000ee80-0451-4000-b000-0000000000
 const HAPTICS_SERVICE = BluetoothUUID.getService("00001802-0000-1000-8000-00805f9b34fb");
 const BATTERY_SERVICE = BluetoothUUID.getService("battery_service");
 
+const serviceList = [IMU_SERVICE, LED_SERVICE, HAPTICS_SERVICE, BATTERY_SERVICE];
+
 /* BLE characteristics */
 const MOVEMENT_DATA_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000aa81-0451-4000-b000-000000000000");
 const ALERT_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("alert_level");
 const BATTERY_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("battery_level");
-const BATTERY_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("ff000ee1-0000-1000-8000-77332aadd550");
+const BATTERY_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000ffb2-0451-4000-b000-000000000000");
+const CHARGER_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("ff000ee1-0000-1000-8000-77332aadd550");
 
 /* globals */
 var movementChar;
@@ -31,6 +34,7 @@ async function handleImuService(imu_service){
         movementChar.addEventListener('characteristicvaluechanged',
             handleImuNotifications);
         document.getElementById('enMovement').disabled = false;
+        document.getElementById("imuServiceWatermark").style.display = "none";
     }
 }
 
@@ -68,6 +72,7 @@ async function handleBatteryService(battery_service){
         batteryLevelChar.addEventListener('characteristicvaluechanged',
                                         handleBatteryNotifications);
         await batteryLevelChar.startNotifications();
+        document.getElementById("batteryServiceWatermark").style.display = "none";
     }
 
     if(batteryStateChar){
@@ -85,7 +90,6 @@ async function onConnectClick() {
         document.getElementById("connectButton").disabled = true;
         document.getElementById("disconnectButton").disabled = false;
 
-        const serviceList = [IMU_SERVICE, LED_SERVICE, HAPTICS_SERVICE, BATTERY_SERVICE];
 
         toastUser('Requesting Bluetooth Device...');
         const device = await navigator.bluetooth.requestDevice({filters:[{namePrefix: "OZON"}],
@@ -118,7 +122,7 @@ async function onConnectClick() {
         const battery_service = services.find(service => service.uuid == BATTERY_SERVICE);
         if(battery_service)
             handleBatteryService(battery_service);
-            
+
         toastUser('Connected!');
       } catch(error) {
         toastUser('Argh! ' + error);
@@ -145,6 +149,9 @@ function onDisconnected(){
     /* disable services */
     document.getElementById('ledService').disabled = true;
     document.getElementById('hapticsService').disabled = true;
+
+    document.getElementById("batteryServiceWatermark").style.display = "initial";
+    document.getElementById("imuServiceWatermark").style.display = "initial";
 
     toastUser("Device Disconnected!");
 }
@@ -231,37 +238,19 @@ function handleBatteryNotifications(event) {
     }
     let level;
     let state;
-    switch(batteryLevel) {
-        case 33:
-            level = '[■ □ □]';
-        break;
-        case 66:
-            level = '[■ ■ □]';
-            break;
-        case 100:
-            level = '[■ ■ ■]';
-            break;
-        default:
-            level = '[□ □ □]';
-    }
 
-    switch(batteryState){
-        case 0:
-            state = 'DONE CHARGING';
-            break;
-        case 1:
-            state = 'CHARGING';
-            break;
-        case 2:
-            state = 'FAULT';
-            break;
+    if(batteryLevel < 25)           level = '[□ □ □]';
+    else if (batteryLevel < 50)     level = '[■ □ □]';
+    else if (batteryLevel < 75)     level = '[■ ■ □]';
+    else                            level = '[■ ■ ■]';
+
+    switch (batteryState) {
         case 3:
-            state = 'SLOW_CHARGE';
+            state = 'CHARGING';
             break;
         default:
             state = 'DISCHARGING';
             break;
-            
     }
     document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + level +' [' + state + ']';
 }
