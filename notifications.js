@@ -1,106 +1,6 @@
-/* BLE services */
-const IMU_SERVICE = BluetoothUUID.getService("f000aa80-0451-4000-b000-000000000000");
-const LED_SERVICE = BluetoothUUID.getService("f000ee80-0451-4000-b000-000000000000");
-const HAPTICS_SERVICE = BluetoothUUID.getService("00001802-0000-1000-8000-00805f9b34fb");
-const BATTERY_SERVICE = BluetoothUUID.getService("battery_service");
-const TOUCH_SERVICE = BluetoothUUID.getService("f000ffe0-0451-4000-b000-000000000000");
+import {ozonDevice} from './lib/OzonDevice.js';
 
-const serviceList = [IMU_SERVICE, LED_SERVICE, HAPTICS_SERVICE, BATTERY_SERVICE, TOUCH_SERVICE];
-
-/* BLE characteristics */
-const MOVEMENT_DATA_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000aa81-0451-4000-b000-000000000000");
-const ALERT_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("alert_level");
-const BATTERY_LEVEL_CHARACTERISTIC = BluetoothUUID.getCharacteristic("battery_level");
-const BATTERY_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000ffb2-0451-4000-b000-000000000000");
-const CHARGER_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("ff000ee1-0000-1000-8000-77332aadd550");
-const TOUCH_STATE_CHARACTERISTIC = BluetoothUUID.getCharacteristic("f000ffe1-0451-4000-b000-000000000000");
-
-/* globals */
-var movementChar;
-var ledChar;
-var hapticsChar;
-var batteryLevelChar;
-var batteryStateChar;
-var touchChar;
-
-var updatePlotHandle;
-var server;
-
-
-async function handleImuService(imu_service){
-    toastUser("Found IMU Service!");
-    const characteristics = await imu_service.getCharacteristics();
-
-    movementChar = characteristics.find(char => char.uuid == MOVEMENT_DATA_CHARACTERISTIC);
-    if(movementChar){
-        toastUser("Found Movement Characteristic!");
-        movementChar.addEventListener('characteristicvaluechanged',
-            handleImuNotifications);
-        document.getElementById('enMovement').disabled = false;
-        document.getElementById("imuServiceWatermark").style.display = "none";
-    }
-}
-
-async function handleLedService(led_service){
-    toastUser("Found LED Service");
-    const characteristics = await led_service.getCharacteristics();
-    
-    ledChar = characteristics.find(char => char.uuid == ALERT_LEVEL_CHARACTERISTIC);
-    if (ledChar){
-        toastUser("Found Led Characteristic!");
-        document.getElementById('ledService').disabled = false;
-    }
-}
-
-async function handleHapticsService(haptics_service){
-    toastUser("Found Haptics Service");
-    const characteristics = await haptics_service.getCharacteristics();
-    
-    hapticsChar = characteristics.find(char => char.uuid == ALERT_LEVEL_CHARACTERISTIC);
-    if (hapticsChar){
-        toastUser("Found HapticsCharacteristic!");
-        document.getElementById('hapticsService').disabled = false;
-    }
-}
-
-async function handleBatteryService(battery_service){
-    toastUser("Found Battery Service");
-    const characteristics = await battery_service.getCharacteristics();
-
-    batteryLevelChar = characteristics.find(char => char.uuid == BATTERY_LEVEL_CHARACTERISTIC);
-    batteryStateChar = characteristics.find(char => char.uuid == BATTERY_STATE_CHARACTERISTIC);
-
-    if (batteryLevelChar){
-        toastUser("Found Battery Level Characteristic!");
-        batteryLevelChar.addEventListener('characteristicvaluechanged',
-                                        handleBatteryNotifications);
-        await batteryLevelChar.startNotifications();
-        document.getElementById("batteryServiceWatermark").style.display = "none";
-    }
-
-    if(batteryStateChar){
-        toastUser("Found Battery State Characteristic!");
-        batteryStateChar.addEventListener('characteristicvaluechanged',
-                                        handleBatteryNotifications);
-        await batteryStateChar.startNotifications();
-    }
-}
-
-async function handleTouchService(touch_service){
-    toastUser("Found Touch Service!");
-    const characteristics = await touch_service.getCharacteristics();
-
-    touchChar = characteristics.find(char => char.uuid == TOUCH_STATE_CHARACTERISTIC);
-    if(touchChar){
-        toastUser("Found Touch Characteristic!");
-        touchChar.addEventListener('characteristicvaluechanged',
-            handleTouchNotifications);
-        touchChar.startNotifications();
-        document.getElementById("touchWatermark").style.display = "none";
-    }
-}
-
-
+var device = ozonDevice;
 
 /* handle connection button */
 async function onConnectClick() {
@@ -108,58 +8,33 @@ async function onConnectClick() {
         document.getElementById("connectButton").disabled = true;
         document.getElementById("disconnectButton").disabled = false;
 
+        /* a log callback can be registered to see debug data */
+        device.logCallback = console.log;
 
-        toastUser('Requesting Bluetooth Device...');
-        const device = await navigator.bluetooth.requestDevice({filters:[{namePrefix: "OZON"}],
-            optionalServices: serviceList});
+        /* registed device disconnected callback */
+        device.onDisconnectCallback = onDisconnected;
+
+        /* register callbacks for notifications */
+        device.touchNotificationCallback = handleTouchNotifications;
+        device.batteryNotificationCallback = handleBatteryNotifications;
+        device.imuDataNotificationCallback = handleImuNotifications;
         
-        device.addEventListener('gattserverdisconnected', onDisconnected);
-        
-        toastUser('Connecting to GATT Server...');
-        server = await device.gatt.connect();
+        /* bluetooth characteristics take some time to become available so
+           register callbacks to handle when they are good to go */
+        device.hapticsAlertCharAvailableCallback = function(){document.getElementById('hapticsService').disabled = false;};
+        device.ledCharAvailableCallback = function(){document.getElementById('ledService').disabled = false;}
+        device.imuDataCharAvailableCallback = function(){
+            document.getElementById('enMovement').disabled = false;
+            document.getElementById("imuServiceWatermark").style.display = "none";
+        }
 
-        toastUser('Collecting Services...');
-        const services = await server.getPrimaryServices();
+        /* begin bluetooth connection process */
+        device.connect();
 
-        /* check for IMU service */
-        const imu_service = services.find(service => service.uuid == IMU_SERVICE);
-        if(imu_service)
-            handleImuService(imu_service);
-
-        /* check for LED service */
-        const led_service = services.find(service => service.uuid == LED_SERVICE);
-        if(led_service)
-            handleLedService(led_service);
-
-        /* check for haptics service */
-        const haptics_service = services.find(service => service.uuid == HAPTICS_SERVICE);
-        if(haptics_service)
-            handleHapticsService(haptics_service);
-
-        /* check for battery service */
-        const battery_service = services.find(service => service.uuid == BATTERY_SERVICE);
-        if(battery_service)
-            handleBatteryService(battery_service);
-
-        /* check for touch service */
-        const touch_service = services.find(service => service.uuid == TOUCH_SERVICE);
-        if(touch_service)
-            handleTouchService(touch_service);
-
-        toastUser('Connected!');
       } catch(error) {
-        toastUser('Argh! ' + error);
-        onDisconnected();
+        toastUser('ERROR! ' + error);
       }
-}
 
-/* handle disconnection button */
-async function onDisconnectClick() {
-    try{
-        server.disconnect();
-    } catch(error){
-        toastUser("ERROR! " + error);
-    }
 }
 
 
@@ -176,6 +51,10 @@ function onDisconnected(){
     document.getElementById("batteryServiceWatermark").style.display = "initial";
     document.getElementById("imuServiceWatermark").style.display = "initial";
     document.getElementById("touchWatermark").style.display = "initial";
+
+    /* disable all intervals */
+    if(updatePlotHandle)
+        clearInterval(updatePlotHandle);
 
     toastUser("Device Disconnected!");
 }
@@ -197,102 +76,81 @@ function toastUser(text){
     }, 3000);
 }
 
-document.addEventListener('DOMContentLoaded', function(event) {
-    // do stuff after website has loaded
-    const enMovementCheckbox = document.getElementById('enMovement');
-    enMovementCheckbox.addEventListener('change', (event) => {
-    onMovementCharClick(event.currentTarget.checked);
-})
+document.addEventListener('DOMContentLoaded', 
+    function(event) {
+        // do stuff after website has loaded
+        const enMovementCheckbox = document.getElementById('enMovement');
+        enMovementCheckbox.addEventListener('change', (event) => {
+            onMovementCharClick(event.currentTarget.checked);
+        })
+        // connect buttons 
+        document.getElementById('connectButton').onclick = onConnectClick;
+        document.getElementById('hapticsButton').onclick = onHapticsClick;
+        document.getElementById('ledButton').onclick = onLedClick;
+        document.getElementById('disconnectButton').onclick = function(){ device.disconnect() };
 })
 
-
+var updatePlotHandle;
+const PLOT_UPDATE_RATE = 200;
 async function onMovementCharClick(checked){
-    try{
-        if(movementChar){
-            if(checked){
-                gyro_data = {x:[],y:[],z:[], time:[]};
-                acc_data = {x:[],y:[],z:[], time:[]};
-                await movementChar.startNotifications();
-                toastUser('Movement updates enabled!');
-                updatePlotHandle = setInterval(updatePlot,100);
-            } else {
-                await movementChar.stopNotifications();
-                toastUser('Movement updates Disabled!');
-                clearInterval(updatePlotHandle);
-            }
-        }
-    } catch(error) {
-        toastUser("ERROR! " + error);
+    if(checked){
+        gyro_data = {x:[],y:[],z:[], time:[]};
+        acc_data = {x:[],y:[],z:[], time:[]};
+        device.setImuNotifications(true);
+        toastUser('Movement updates enabled!');
+        updatePlotHandle = setInterval(updatePlot,PLOT_UPDATE_RATE);
+    } else {
+        device.setImuNotifications(false);
+        toastUser('Movement updates Disabled!');
+        clearInterval(updatePlotHandle);
     }
 }
 
-async function onLedClick(){
-    try{
-        if(ledChar){
-            const option = document.getElementById('ledWaveform').value
-            const value = new Uint8Array([parseInt(option)])
-            await ledChar.writeValue(value);
-        }
-    }catch(error){
-        toastUser("ERROR! " + error);
-    }
+function onLedClick(){
+    const option = document.getElementById('ledWaveform').value
+    const value = parseInt(option);
+    device.blink(value);
 }
 
-async function onHapticsClick(){
-    try{
-        if(hapticsChar){
-            const option = document.getElementById('hapticsWaveform').value
-            const value = new Uint8Array([parseInt(option)])
-            await hapticsChar.writeValue(value);
-        }
-    }catch(error){
-        toastUser("ERROR! " + error);
-    }
+function onHapticsClick(){
+    const option = document.getElementById('hapticsWaveform').value
+    const value = parseInt(option);
+    ozonDevice.vibrate(value);
 }
+
+
+function handleTouchNotifications(buttons){
+
+    let state = [
+        buttons.btn0 ? '1':'0', 
+        buttons.btn1 ? '1':'0',
+        buttons.btn2 ? '1':'0',
+        buttons.btn3 ? '1':'0'];
+    document.getElementById('touchStatus').innerHTML = 'Touch Status [' + state.join('-') + ']';
+}
+
 
 var batteryLevel = 0;
 var batteryState = 0;
 
-function handleTouchNotifications(event){
-    let value = event.target.value.getUint8(0);
-    let state = [value & 0x01 ? '1':'0', 
-                value & 0x02 ? '1':'0',
-                value & 0x04 ? '1':'0',
-                value & 0x08 ? '1':'0'];
-    document.getElementById('touchStatus').innerHTML = 'Touch Status [' + state.join('-') + ']';
-}
-
-function handleBatteryNotifications(event) {
-    let value = event.target.value.getUint8(0);
-    if(event.target.uuid == BATTERY_LEVEL_CHARACTERISTIC){
-        batteryLevel = value;
-    } else if (event.target.uuid == BATTERY_STATE_CHARACTERISTIC){
-        batteryState = value;
+function handleBatteryNotifications(value) {
+    if(value.level)
+        batteryLevel = value.level;
+    else if (value.state){
+        batteryState = value.state;
     }
-    let level;
-    let state;
-
+    var level;
     if(batteryLevel < 25)           level = '[□ □ □]';
     else if (batteryLevel < 50)     level = '[■ □ □]';
     else if (batteryLevel < 75)     level = '[■ ■ □]';
     else                            level = '[■ ■ ■]';
 
-    switch (batteryState) {
-        case 3:
-            state = 'CHARGING';
-            break;
-        default:
-            state = 'DISCHARGING';
-            break;
-    }
-    document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + level +' [' + state + ']';
+    document.getElementById("batteryServiceWatermark").style.display = "none";
+    document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + level +' [' + batteryState + ']';
 }
 
 /* global defines */
-const GYROSCOPE_RANGE = 250.0;
-const ACCELEROMETER_RANGE = 8.0;
 const PLOT_RANGE = 100;
-const TIMESTAMP_STEP = 39e-6;
 
 let gyro_data = {x:[],y:[],z:[], time:[]};
 let acc_data = {x:[],y:[],z:[], time:[]};
@@ -304,7 +162,7 @@ var gyro_layout = {
     },
     yaxis: {
         title: 'deg/s',
-        range: [-GYROSCOPE_RANGE/2., GYROSCOPE_RANGE/2.]
+        range: [-device.GYROSCOPE_RANGE/2., device.GYROSCOPE_RANGE/2.]
     }
 };
 
@@ -332,7 +190,7 @@ var acc_layout = {
     },
     yaxis: {
         title: 'g (9.81m/s^2)',
-        range: [-ACCELEROMETER_RANGE/2., ACCELEROMETER_RANGE/2.]
+        range: [-device.ACCELEROMETER_RANGE/2., device.ACCELEROMETER_RANGE/2.]
     },
 };
 
@@ -375,53 +233,30 @@ function updatePlot(){
 }
 
 
-function handleImuNotifications(event) {
-    let value = event.target.value;
-    
-    function copy(src, len)  {
-        var dst = new ArrayBuffer(len);
-        new Uint8Array(dst).set(new Uint8Array(src));
-        return dst;
-    };
-
-
-    var data_view = new DataView(copy(value.buffer, 16));
-
-    let timestamp = data_view.getUint32(6*2,true) * TIMESTAMP_STEP;
-    
-    /* create gyro data */
-    let gyro_x = value.getInt16(0, true) / 65536. * GYROSCOPE_RANGE;
-    let gyro_y = value.getInt16(1*2, true) / 65536. * GYROSCOPE_RANGE;
-    let gyro_z = value.getInt16(2*2, true) / 65536. * GYROSCOPE_RANGE;
-
+function handleImuNotifications(data) {
     /* trim data  */
-    gyro_data['x'].push(gyro_x);
+    gyro_data['x'].push(data.gyro.x);
     while(gyro_data['x'].length > PLOT_RANGE) gyro_data['x'].shift();
 
-    gyro_data['y'].push(gyro_y);
+    gyro_data['y'].push(data.gyro.x);
     while(gyro_data['y'].length > PLOT_RANGE) gyro_data['y'].shift();
     
-    gyro_data['z'].push(gyro_z);
+    gyro_data['z'].push(data.gyro.x);
     while(gyro_data['z'].length > PLOT_RANGE) gyro_data['z'].shift();
 
-    gyro_data['time'].push(timestamp);
+    gyro_data['time'].push(data.timestamp);
     while(gyro_data['time'].length > PLOT_RANGE) gyro_data['time'].shift();
 
-    /* create acc data */
-    let acc_x  = value.getInt16(3*2, true) /65536 * ACCELEROMETER_RANGE;
-    let acc_y  = value.getInt16(4*2, true) /65536 * ACCELEROMETER_RANGE;
-    let acc_z  = value.getInt16(5*2, true) /65536 * ACCELEROMETER_RANGE;
-
     /* trim data  */
-    acc_data['x'].push(acc_x);
+    acc_data['x'].push(data.acc.x);
     while(acc_data['x'].length > PLOT_RANGE) acc_data['x'].shift();
 
-    acc_data['y'].push(acc_y);
+    acc_data['y'].push(data.acc.y);
     while(acc_data['y'].length > PLOT_RANGE) acc_data['y'].shift();
     
-    acc_data['z'].push(acc_z);
+    acc_data['z'].push(data.acc.z);
     while(acc_data['z'].length > PLOT_RANGE) acc_data['z'].shift();
 
-    acc_data['time'].push(timestamp);
+    acc_data['time'].push(data.timestamp);
     while(acc_data['time'].length > PLOT_RANGE) acc_data['time'].shift();
 }

@@ -9,8 +9,8 @@
         <div class="navbar">
             <h1>OZON device testbench</h1>
         </div>
-        <button onclick="onConnectClick()" id="connectButton">Connect</button>
-        <button disabled onclick="onDisconnectClick()" id="disconnectButton">Disconnect</button>
+        <button id="connectButton">Connect</button>
+        <button disabled id="disconnectButton">Disconnect</button>
         <hr>
             <header> <h1> IMU Service</h1> </header>
                 <section id="ImuPlots">
@@ -22,7 +22,6 @@
                                 DISCONNECTED
                             </div>
                         </div>
-
                         <div id="gyro"></div>
                         <div id="acc"></div>
                     </div>
@@ -39,7 +38,7 @@
                 <option value="1">Long Blink</option>
                 <option value="2">Beathing Blink</option>
                 </select>
-            <button id="ledButton" onclick="onLedClick();">Blink!</button>
+            <button id="ledButton">Blink!</button>
         </fieldset>
 
         <fieldset id="hapticsService" disabled>
@@ -49,7 +48,7 @@
                 <option value="1">Double tap</option>
                 <option value="2">Multiple taps</option>
                 </select>
-            <button id="hapticsButton" onclick="onHapticsClick();">Vibrate!</button>
+            <button id="hapticsButton">Vibrate!</button>
         </fieldset>
         <hr>
         <div class="container">
@@ -77,9 +76,8 @@
         </div>
         <hr>
 
-
         <div id="snackbar">Some text some message..</div>
         <!-- scripts -->
-        <script type="text/javascript" src="./notifications.js"></script>
+        <script type="module" src="./notifications.js"></script>
     </body>
 </html> 
