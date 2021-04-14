@@ -114,6 +114,7 @@ async function onConnectClick() {
         device.logCallback = console.log;
         device.touchNotificationCallback = handleTouchNotifications;
         device.batteryNotificationCallback = handleBatteryNotifications;
+        device.hapticsAlertCharAvailableCallback = function(){document.getElementById('hapticsService').disabled = false;};
 
         device.connect();
 /*
@@ -215,8 +216,9 @@ document.addEventListener('DOMContentLoaded',
         enMovementCheckbox.addEventListener('change', (event) => {
             onMovementCharClick(event.currentTarget.checked);
         })
-        const connectButton = document.getElementById('connectButton');
-        connectButton.onclick = onConnectClick;
+        // connect "connect" button 
+        document.getElementById('connectButton').onclick = onConnectClick;
+        document.getElementById('hapticsButton').onclick = onHapticsClick;
 })
 
 
@@ -252,16 +254,10 @@ async function onLedClick(){
     }
 }
 
-async function onHapticsClick(){
-    try{
-        if(hapticsChar){
-            const option = document.getElementById('hapticsWaveform').value
-            const value = new Uint8Array([parseInt(option)])
-            await hapticsChar.writeValue(value);
-        }
-    }catch(error){
-        toastUser("ERROR! " + error);
-    }
+function onHapticsClick(){
+    const option = document.getElementById('hapticsWaveform').value
+    const value = parseInt(option);
+    ozonDevice.vibrateDevice(value);
 }
 
 var batteryLevel = 0;
