@@ -242,7 +242,7 @@ function updatePlot(timestep){
     Plotly.update('acc', acc_update);
 
     try{
-        var fps = (1/(timestep-prev_timestep)/1e-3).toPrecision(1);
+        var fps = (1/(timestep-prev_timestep)/1e-3).toFixed(0);
         document.getElementById('fps_counter').innerHTML = "update Rate: " + fps + ' FPS';
         prev_timestep = timestep;
     } catch {};
