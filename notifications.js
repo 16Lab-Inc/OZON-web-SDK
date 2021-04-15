@@ -5,6 +5,8 @@ var device = ozonDevice;
 /* handle connection button */
 async function onConnectClick() {
     try {
+        toastUser("Connecting to device!");
+
         document.getElementById("connectButton").disabled = true;
         document.getElementById("disconnectButton").disabled = false;
 
@@ -30,7 +32,10 @@ async function onConnectClick() {
         device.touchCharAvailableCallback = function() {document.getElementById("touchWatermark").style.display = "none";};
 
         /* begin bluetooth connection process */
-        device.connect();
+        if (!await device.connect()){
+            throw("Couldn't connect to device!");
+        }
+        toastUser("Device connected!");
 
       } catch(error) {
         onDisconnected();
@@ -89,7 +94,7 @@ document.addEventListener('DOMContentLoaded',
         document.getElementById('connectButton').onclick = onConnectClick;
         document.getElementById('hapticsButton').onclick = onHapticsClick;
         document.getElementById('ledButton').onclick = onLedClick;
-        document.getElementById('disconnectButton').onclick = function(){ device.disconnect() };
+        document.getElementById('disconnectButton').onclick = function(){ try{device.disconnect()}catch{onDisconnected();} };
 })
 
 var updatePlotHandle;
@@ -100,11 +105,14 @@ async function onMovementCharClick(checked){
         acc_data = {x:[],y:[],z:[], time:[]};
         device.setImuNotifications(true);
         toastUser('Movement updates enabled!');
-        updatePlotHandle = setInterval(updatePlot,PLOT_UPDATE_RATE);
+        updatePlotHandle = true;
+        window.requestAnimationFrame(updatePlot);
+        //updatePlotHandle = setInterval(updatePlot,PLOT_UPDATE_RATE);
     } else {
         device.setImuNotifications(false);
         toastUser('Movement updates Disabled!');
-        clearInterval(updatePlotHandle);
+        //clearInterval(updatePlotHandle);
+        updatePlotHandle = false;
     }
 }
 
@@ -215,8 +223,8 @@ Plotly.newPlot('acc', [{
     name: 'z axis'
 }],acc_layout);
   
-
-function updatePlot(){
+var prev_timestep = 0;
+function updatePlot(timestep){
     /* uptdate gyro plot */
     var gyro_update = {
         y: [ gyro_data['x'], gyro_data['y'], gyro_data['z'] ],
@@ -232,6 +240,14 @@ function updatePlot(){
         };
 
     Plotly.update('acc', acc_update);
+
+    try{
+        var fps = (1/(timestep-prev_timestep)/1e-3).toPrecision(1);
+        document.getElementById('fps_counter').innerHTML = "update Rate: " + fps + ' FPS';
+        prev_timestep = timestep;
+    } catch {};
+    if(updatePlotHandle)
+        window.requestAnimationFrame(updatePlot);
 }
 
 
@@ -240,10 +256,10 @@ function handleImuNotifications(data) {
     gyro_data['x'].push(data.gyro.x);
     while(gyro_data['x'].length > PLOT_RANGE) gyro_data['x'].shift();
 
-    gyro_data['y'].push(data.gyro.x);
+    gyro_data['y'].push(data.gyro.y);
     while(gyro_data['y'].length > PLOT_RANGE) gyro_data['y'].shift();
     
-    gyro_data['z'].push(data.gyro.x);
+    gyro_data['z'].push(data.gyro.z);
     while(gyro_data['z'].length > PLOT_RANGE) gyro_data['z'].shift();
 
     gyro_data['time'].push(data.timestamp);
