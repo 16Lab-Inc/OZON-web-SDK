@@ -29,7 +29,7 @@ async function onConnectClick() {
             document.getElementById('enMovement').disabled = false;
             document.getElementById("imuServiceWatermark").style.display = "none";
         }
-        device.touchCharAvailableCallback = function() {
+        device.touchCharAvailableCallback = function(){
             document.getElementById("touchWatermark").style.display = "none";
             document.getElementById("enTouch").disabled = false;
         };
@@ -95,8 +95,9 @@ document.addEventListener('DOMContentLoaded',
             onMovementCharClick(event.currentTarget.checked);
         })
 
-        document.getElementById('enTouch').addEventListener('change', (event) => {
-            device.setTouchNotifications(event.currentTarget.checked);
+        const enTouch = document.getElementById('enTouch');
+        enTouch.addEventListener('change', (event) => {
+            onTouchCharClick(event.currentTarget.checked);
         });
         // connect buttons 
         document.getElementById('connectButton').onclick = onConnectClick;
@@ -122,6 +123,10 @@ async function onMovementCharClick(checked){
         //clearInterval(updatePlotHandle);
         updatePlotHandle = false;
     }
+}
+
+function onTouchCharClick(checked){
+    device.setTouchNotifications(checked);
 }
 
 function onLedClick(){
