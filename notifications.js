@@ -29,7 +29,10 @@ async function onConnectClick() {
             document.getElementById('enMovement').disabled = false;
             document.getElementById("imuServiceWatermark").style.display = "none";
         }
-        device.touchCharAvailableCallback = function() {document.getElementById("touchWatermark").style.display = "none";};
+        device.touchCharAvailableCallback = function() {
+            document.getElementById("touchWatermark").style.display = "none";
+            document.getElementById("enTouch").disabled = false;
+        };
 
         /* begin bluetooth connection process */
         if (!await device.connect()){
@@ -58,6 +61,7 @@ function onDisconnected(){
     document.getElementById("batteryServiceWatermark").style.display = "initial";
     document.getElementById("imuServiceWatermark").style.display = "initial";
     document.getElementById("touchWatermark").style.display = "initial";
+    document.getElementById("enTouch").disabled = true;
 
     /* disable all intervals */
     if(updatePlotHandle)
@@ -90,6 +94,10 @@ document.addEventListener('DOMContentLoaded',
         enMovementCheckbox.addEventListener('change', (event) => {
             onMovementCharClick(event.currentTarget.checked);
         })
+
+        document.getElementById('enTouch').addEventListener('change', (event) => {
+            device.setTouchNotifications(event.currentTarget.checked);
+        });
         // connect buttons 
         document.getElementById('connectButton').onclick = onConnectClick;
         document.getElementById('hapticsButton').onclick = onHapticsClick;
