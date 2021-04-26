@@ -1,5 +1,5 @@
 import {ozonDevice} from './lib/OzonDevice.js';
-import WebGLplot, { WebglLine, ColorRGBA } from "webgl-plot";
+//import WebGLplot, { WebglLine, ColorRGBA } from "webgl-plot";
 
 var device = ozonDevice;
 
