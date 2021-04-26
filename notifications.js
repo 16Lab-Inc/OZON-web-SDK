@@ -255,10 +255,19 @@ function updatePlot(timestep){
     Plotly.update('acc', acc_update);
 
     try{
+        const acc_time = tf.tensor1d(acc_data.time);
+        const acc_time_diff = acc_time.slice(1,-1).sub(acc_time.slice(0,-2))
+        const avg_time = acc_time_diff.avgerage();
+        const res = avg_time.toString();
+        tf.disposeVariables();
+        const y = tf.tensor1d([1, 2, 3, 4]);
         var fps = (1/(timestep-prev_timestep)/1e-3).toFixed(0);
-        document.getElementById('fps_counter').innerHTML = "update Rate: " + fps + ' FPS';
+        document.getElementById('fps_counter').innerHTML = "update Rate: " + fps + ' FPS' + ' ' + res;
         prev_timestep = timestep;
-    } catch {};
+
+    } catch (error){
+        toastUser("Error!" + error);
+    };
     if(updatePlotHandle)
         window.requestAnimationFrame(updatePlot);
 }
