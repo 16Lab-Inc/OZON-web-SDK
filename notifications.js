@@ -256,13 +256,14 @@ function updatePlot(timestep){
 
     try{
         const acc_time = tf.tensor1d(acc_data.time);
-        const acc_time_diff = acc_time.slice(1,-1).sub(acc_time.slice(0,tf.util.sizeFromShape(acc_time.shape)-3))
-        const avg_time = acc_time_diff.avgerage();
-        const res = avg_time.toString();
+        const acc_time_diff = acc_time.slice(1,-1)
+                                       .sub(acc_time
+                                       .slice(0,acc_time.size-1));
+        const avg_time = acc_time_diff.sum().div(acc_time_diff.size);
+        const avg_latency = (avg_time.dataSync()/1e-3).toFixed(0);
         tf.disposeVariables();
-        const y = tf.tensor1d([1, 2, 3, 4]);
         var fps = (1/(timestep-prev_timestep)/1e-3).toFixed(0);
-        document.getElementById('fps_counter').innerHTML = "update Rate: " + fps + ' FPS' + ' ' + res;
+        document.getElementById('fps_counter').innerHTML = "update Rate: " + fps + ' FPS' + ' ' + avg_latency + ' ms';
         prev_timestep = timestep;
 
     } catch (error){
