@@ -1,4 +1,5 @@
 import {ozonDevice} from './lib/OzonDevice.js';
+import WebGLplot, { WebglLine, ColorRGBA } from "webgl-plot";
 
 var device = ozonDevice;
 
@@ -87,6 +88,9 @@ function toastUser(text){
     }, 3000);
 }
 
+var line;
+var wglp;
+
 document.addEventListener('DOMContentLoaded', 
     function(event) {
         // do stuff after website has loaded
@@ -104,7 +108,37 @@ document.addEventListener('DOMContentLoaded',
         document.getElementById('hapticsButton').onclick = onHapticsClick;
         document.getElementById('ledButton').onclick = onLedClick;
         document.getElementById('disconnectButton').onclick = function(){ try{device.disconnect()}catch{onDisconnected();} };
+
+        /* WEBGL PLOT */
+        const canvas = document.getElementById("my_canvas");
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        canvas.width = canvas.clientWidth * devicePixelRatio;
+        canvas.height = canvas.clientHeight * devicePixelRatio;
+
+        const numX = canvas.width;
+        const color = new ColorRGBA(Math.random(), Math.random(), Math.random(), 1);
+        line = new WebglLine(color);
+        wglp = new WebGLplot(canvas, numX);
+
+        line.lineSpaceX(-1, 2 / numX);
+        wglp.addLine(line);
 })
+
+function newFrame() {
+    update();
+    wglp.update();
+    if(updatePlotHandle)
+        requestAnimationFrame(newFrame);
+  }
+
+
+function update() {
+    for (let i = 0; i < PLOT_RANGE; i++) {
+      line.setY(i, acc_data['x'][i]);
+      line.setX(i, acc_data['time'][i])
+    }
+}
+
 
 var updatePlotHandle;
 const PLOT_UPDATE_RATE = 200;
@@ -115,7 +149,8 @@ async function onMovementCharClick(checked){
         device.setImuNotifications(true);
         toastUser('Movement updates enabled!');
         updatePlotHandle = true;
-        window.requestAnimationFrame(updatePlot);
+        //window.requestAnimationFrame(updatePlot);
+        requestAnimationFrame(newFrame);
         //updatePlotHandle = setInterval(updatePlot,PLOT_UPDATE_RATE);
     } else {
         device.setImuNotifications(false);
