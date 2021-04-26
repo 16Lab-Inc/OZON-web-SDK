@@ -256,7 +256,7 @@ function updatePlot(timestep){
 
     try{
         const acc_time = tf.tensor1d(acc_data.time);
-        const acc_time_diff = acc_time.slice(1,-1).sub(acc_time.slice(0,tf.util.sizeFromShape(acc_time.shape)-1))
+        const acc_time_diff = acc_time.slice(1,-1).sub(acc_time.slice(0,tf.util.sizeFromShape(acc_time.shape)-3))
         const avg_time = acc_time_diff.avgerage();
         const res = avg_time.toString();
         tf.disposeVariables();
