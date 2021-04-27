@@ -1,5 +1,4 @@
 import {ozonDevice} from './lib/OzonDevice.js';
-//import WebGLplot, { WebglLine, ColorRGBA } from "webgl-plot";
 
 var device = ozonDevice;
 
@@ -88,8 +87,9 @@ function toastUser(text){
     }, 3000);
 }
 
-var line;
-var wglp;
+/* global defines */
+const PLOT_RANGE = 50;
+
 
 document.addEventListener('DOMContentLoaded', 
     function(event) {
@@ -108,36 +108,7 @@ document.addEventListener('DOMContentLoaded',
         document.getElementById('hapticsButton').onclick = onHapticsClick;
         document.getElementById('ledButton').onclick = onLedClick;
         document.getElementById('disconnectButton').onclick = function(){ try{device.disconnect()}catch{onDisconnected();} };
-
-        /* WEBGL PLOT */
-        const canvas = document.getElementById("my_canvas");
-        const devicePixelRatio = window.devicePixelRatio || 1;
-        canvas.width = canvas.clientWidth * devicePixelRatio;
-        canvas.height = canvas.clientHeight * devicePixelRatio;
-
-        const numX = canvas.width;
-        const color = new ColorRGBA(Math.random(), Math.random(), Math.random(), 1);
-        line = new WebglLine(color);
-        wglp = new WebGLplot(canvas, numX);
-
-        line.lineSpaceX(-1, 2 / numX);
-        wglp.addLine(line);
 })
-
-function newFrame() {
-    update();
-    wglp.update();
-    if(updatePlotHandle)
-        requestAnimationFrame(newFrame);
-  }
-
-
-function update() {
-    for (let i = 0; i < PLOT_RANGE; i++) {
-      line.setY(i, acc_data['x'][i]);
-      line.setX(i, acc_data['time'][i])
-    }
-}
 
 
 var updatePlotHandle;
@@ -149,13 +120,11 @@ async function onMovementCharClick(checked){
         device.setImuNotifications(true);
         toastUser('Movement updates enabled!');
         updatePlotHandle = true;
-        //window.requestAnimationFrame(updatePlot);
-        requestAnimationFrame(newFrame);
-        //updatePlotHandle = setInterval(updatePlot,PLOT_UPDATE_RATE);
+        window.requestAnimationFrame(updatePlot);
+
     } else {
         device.setImuNotifications(false);
         toastUser('Movement updates Disabled!');
-        //clearInterval(updatePlotHandle);
         updatePlotHandle = false;
     }
 }
@@ -207,9 +176,6 @@ function handleBatteryNotifications(value) {
     document.getElementById('batteryStatus').innerHTML = 'Battery level: ' + level +' [' + batteryState + ']';
 }
 
-/* global defines */
-const PLOT_RANGE = 100;
-
 let gyro_data = {x:[],y:[],z:[], time:[]};
 let acc_data = {x:[],y:[],z:[], time:[]};
 
@@ -217,34 +183,42 @@ var gyro_layout = {
     title: 'Gyroscope Data',
     xaxis: {
         title: 'timestamp',
-    },
+//        range: [0, PLOT_RANGE]
+    },      
     yaxis: {
         title: 'deg/s',
         range: [-device.GYROSCOPE_RANGE/2., device.GYROSCOPE_RANGE/2.]
     }
 };
 
-Plotly.newPlot('gyro', [{
+const gyro_plot = [{
     y: gyro_data['x'],
+    type: "scattergl",
     mode: 'lines',
     name: 'x axis'
 },
 {
     y: gyro_data['y'],
+    type: "scattergl",
     mode: 'lines',
     name: 'y axis'
 },
 {
     y: gyro_data['z'],
+    type: "scattergl",
     mode: 'lines',
     name: 'z axis'
-}], gyro_layout);
+}]
+
+Plotly.react('gyro', gyro_data, gyro_layout);
+
 
 
 var acc_layout = {
     title: 'Accelerometer Data',
     xaxis: {
         title: 'timestamp',
+//        range: [0, PLOT_RANGE]
     },
     yaxis: {
         title: 'g (9.81m/s^2)',
@@ -252,42 +226,70 @@ var acc_layout = {
     },
 };
 
-Plotly.newPlot('acc', [{
+
+const acc_plot = [{
     y: acc_data['x'],
     x: acc_data['time'],
+    type: "scattergl",
     mode: 'lines',
     name: 'x axis'
 },
 {
     y: acc_data['y'],
     x: acc_data['time'],
+    type: "scattergl",
     mode: 'lines',
     name: 'y axis'
 },
 {
     y: acc_data['z'],
     x: acc_data['time'],
+    type: "scattergl",
     mode: 'lines',
     name: 'z axis'
-}],acc_layout);
+}];
+
+Plotly.react('acc', acc_plot, acc_layout);
   
 var prev_timestep = 0;
 function updatePlot(timestep){
-    /* uptdate gyro plot */
+    /*
+    //uptdate gyro plot 
     var gyro_update = {
         y: [ gyro_data['x'], gyro_data['y'], gyro_data['z'] ],
         x: [ gyro_data['time'],gyro_data['time'],gyro_data['time']]
         };
+    
+    //gyro_layout.xaxis.range = [gyro_data.time[0],gyro_data[-1]]
+    Plotly.react('gyro', gyro_update, gyro_layout);
 
-    Plotly.update('gyro', gyro_update);
-
-    /* uptdate acc plot */
+    // uptdate acc plot 
     var acc_update = {
         y: [ acc_data['x'], acc_data['y'], acc_data['z'] ],
         x: [ acc_data['time'],acc_data['time'],acc_data['time']]
         };
+    */
+    acc_plot[0].y = acc_data.x
+    acc_plot[0].x = acc_data.time
+    acc_plot[1].y = acc_data.y
+    acc_plot[1].x = acc_data.time
+    acc_plot[2].y = acc_data.z
+    acc_plot[2].x = acc_data.time
 
-    Plotly.update('acc', acc_update);
+    acc_layout.xaxis.range = [acc_data.time[0],acc_data.time[acc_data.time.length-1]]
+    acc_layout.datarevision = acc_layout.datarevision + 1;
+    Plotly.react('acc', acc_plot, acc_layout);
+
+    gyro_plot[0].y = gyro_data.x
+    gyro_plot[0].x = gyro_data.time
+    gyro_plot[1].y = gyro_data.y
+    gyro_plot[1].x = gyro_data.time
+    gyro_plot[2].y = gyro_data.z
+    gyro_plot[2].x = gyro_data.time
+
+    gyro_layout.xaxis.range = [gyro_data.time[0],gyro_data.time[gyro_data.time.length-1]]
+    gyro_layout.datarevision = gyro_layout.datarevision + 1;
+    Plotly.react('gyro', gyro_plot, gyro_layout);
 
     try{
         const acc_time = tf.tensor1d(acc_data.time);
