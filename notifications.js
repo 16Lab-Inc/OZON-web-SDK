@@ -183,7 +183,6 @@ var gyro_layout = {
     title: 'Gyroscope Data',
     xaxis: {
         title: 'timestamp',
-//        range: [0, PLOT_RANGE]
     },      
     yaxis: {
         title: 'deg/s',
@@ -195,19 +194,22 @@ const gyro_plot = [{
     y: gyro_data['x'],
     type: "scattergl",
     mode: 'lines',
-    name: 'x axis'
+    name: 'x axis',
+    showlegend: false
 },
 {
     y: gyro_data['y'],
     type: "scattergl",
     mode: 'lines',
-    name: 'y axis'
+    name: 'y axis',
+    showlegend: false
 },
 {
     y: gyro_data['z'],
     type: "scattergl",
     mode: 'lines',
-    name: 'z axis'
+    name: 'z axis',
+    showlegend: false
 }]
 
 Plotly.react('gyro', gyro_data, gyro_layout);
@@ -218,7 +220,6 @@ var acc_layout = {
     title: 'Accelerometer Data',
     xaxis: {
         title: 'timestamp',
-//        range: [0, PLOT_RANGE]
     },
     yaxis: {
         title: 'g (9.81m/s^2)',
@@ -232,50 +233,38 @@ const acc_plot = [{
     x: acc_data['time'],
     type: "scattergl",
     mode: 'lines',
-    name: 'x axis'
+    name: 'x axis',
+    showlegend: false
 },
 {
     y: acc_data['y'],
     x: acc_data['time'],
     type: "scattergl",
     mode: 'lines',
-    name: 'y axis'
+    name: 'y axis',
+    showlegend: false
 },
 {
     y: acc_data['z'],
     x: acc_data['time'],
     type: "scattergl",
     mode: 'lines',
-    name: 'z axis'
+    name: 'z axis',
+    showlegend: false
 }];
 
 Plotly.react('acc', acc_plot, acc_layout);
   
 var prev_timestep = 0;
 function updatePlot(timestep){
-    /*
-    //uptdate gyro plot 
-    var gyro_update = {
-        y: [ gyro_data['x'], gyro_data['y'], gyro_data['z'] ],
-        x: [ gyro_data['time'],gyro_data['time'],gyro_data['time']]
-        };
-    
-    //gyro_layout.xaxis.range = [gyro_data.time[0],gyro_data[-1]]
-    Plotly.react('gyro', gyro_update, gyro_layout);
-
-    // uptdate acc plot 
-    var acc_update = {
-        y: [ acc_data['x'], acc_data['y'], acc_data['z'] ],
-        x: [ acc_data['time'],acc_data['time'],acc_data['time']]
-        };
-    */
+ /*   
     acc_plot[0].y = acc_data.x
     acc_plot[0].x = acc_data.time
     acc_plot[1].y = acc_data.y
     acc_plot[1].x = acc_data.time
     acc_plot[2].y = acc_data.z
     acc_plot[2].x = acc_data.time
-
+*/
     acc_layout.xaxis.range = [acc_data.time[0],acc_data.time[acc_data.time.length-1]]
     acc_layout.datarevision = acc_layout.datarevision + 1;
     Plotly.react('acc', acc_plot, acc_layout);
@@ -326,15 +315,22 @@ function handleImuNotifications(data) {
     while(gyro_data['time'].length > PLOT_RANGE) gyro_data['time'].shift();
 
     /* trim data  */
-    acc_data['x'].push(data.acc.x);
-    while(acc_data['x'].length > PLOT_RANGE) acc_data['x'].shift();
+    acc_plot[0].y.push(data.acc.x);
+    while(acc_plot[0].y.length > PLOT_RANGE) acc_plot[0].y.shift();
 
-    acc_data['y'].push(data.acc.y);
-    while(acc_data['y'].length > PLOT_RANGE) acc_data['y'].shift();
+    acc_plot[1].y.push(data.acc.y);
+    while(acc_plot[1].y.length > PLOT_RANGE) acc_plot[1].y.shift();
     
-    acc_data['z'].push(data.acc.z);
-    while(acc_data['z'].length > PLOT_RANGE) acc_data['z'].shift();
+    acc_plot[2].y.push(data.acc.z);
+    while(acc_plot[2].y.length > PLOT_RANGE)acc_plot[2].y.shift();
 
     acc_data['time'].push(data.timestamp);
     while(acc_data['time'].length > PLOT_RANGE) acc_data['time'].shift();
+
+    acc_plot[0].x = acc_data.time
+    acc_plot[1].x = acc_data.time
+    acc_plot[2].x = acc_data.time
+
+    acc_layout.xaxis.range = [acc_data.time[0],acc_data.time[acc_data.time.length-1]]
+    acc_layout.datarevision = acc_layout.datarevision + 1;
 }
